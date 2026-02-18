@@ -1,4 +1,4 @@
-﻿<Solution>
+<Solution>
   <Project Path="ThryAssemblyDefinition.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="ThryExternal.csproj" />
