@@ -20,7 +20,9 @@ public class PlayerPickupHands : MonoBehaviour
     private InputAction dropLAction;
     private InputAction dropRAction;
 
-    private LookHighlight currentHighlight;
+    // Highlight targets (either parent controller OR single LookHighlight)
+    private ParentHighlightController currentParentHighlight;
+    private LookHighlight currentSingleHighlight;
     private Transform currentLookTarget;
 
     private void Awake()
@@ -72,10 +74,23 @@ public class PlayerPickupHands : MonoBehaviour
             if (t != currentLookTarget)
             {
                 ClearHighlight();
-
                 currentLookTarget = t;
-                currentHighlight = t.GetComponent<LookHighlight>() ?? t.GetComponentInParent<LookHighlight>();
-                currentHighlight?.SetHighlighted(true);
+
+                // 1) Prefer parent highlight controller (collider on parent, renderers on children)
+                currentParentHighlight = t.GetComponent<ParentHighlightController>()
+                                      ?? t.GetComponentInParent<ParentHighlightController>();
+
+                if (currentParentHighlight != null)
+                {
+                    currentParentHighlight.SetHighlighted(true);
+                    return;
+                }
+
+                // 2) Fallback: single object highlight
+                currentSingleHighlight = t.GetComponent<LookHighlight>()
+                                      ?? t.GetComponentInParent<LookHighlight>();
+
+                currentSingleHighlight?.SetHighlighted(true);
             }
         }
         else
@@ -86,8 +101,14 @@ public class PlayerPickupHands : MonoBehaviour
 
     private void ClearHighlight()
     {
-        currentHighlight?.SetHighlighted(false);
-        currentHighlight = null;
+        if (currentParentHighlight != null)
+            currentParentHighlight.SetHighlighted(false);
+
+        if (currentSingleHighlight != null)
+            currentSingleHighlight.SetHighlighted(false);
+
+        currentParentHighlight = null;
+        currentSingleHighlight = null;
         currentLookTarget = null;
     }
 

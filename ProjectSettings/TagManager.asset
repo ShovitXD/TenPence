@@ -3,7 +3,36 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - rawM
+  - agedM
+  - spoiledM
+  - rawP
+  - agedP
+  - spoiledP
+  - rawC
+  - agedC
+  - spoiledC
+  - rawMM
+  - agedMM
+  - spoiledMM
+  - rawST
+  - agedST
+  - spoiledST
+  - rawVM
+  - agedVM
+  - spoiledVM
+  - rawMG
+  - agedMG
+  - spoiledMG
+  - rawBV
+  - agedBV
+  - spoiledBV
+  - letus
+  - mayo
+  - rawW
+  - agedW
+  - spoiledW
   layers:
   - Default
   - TransparentFX
@@ -12,8 +41,8 @@ TagManager:
   - Water
   - UI
   - Ingredient
-  - 
-  - 
+  - Floor
+  - Pick
   - 
   - 
   - 
