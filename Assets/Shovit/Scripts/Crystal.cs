@@ -7,13 +7,28 @@ public class Crystal : MonoBehaviour
 
     [Header("Settings")]
     [SerializeField] private string floorLayerName = "Floor";
+    [SerializeField] private string roomHandlerObjectName = "RoomHandler";
 
     private int _floorLayerId = -1;
 
     private void Awake()
     {
+        // Find RoomYearDirector from GameObject named "RoomHandler"
         if (roomYearDirector == null)
-            roomYearDirector = FindFirstObjectByType<RoomYearDirector>();
+        {
+            GameObject roomHandler = GameObject.Find(roomHandlerObjectName);
+
+            if (roomHandler != null)
+            {
+                roomYearDirector = roomHandler.GetComponent<RoomYearDirector>();
+                if (roomYearDirector == null)
+                    Debug.LogWarning($"Crystal: '{roomHandlerObjectName}' found but RoomYearDirector component is missing on it.");
+            }
+            else
+            {
+                Debug.LogWarning($"Crystal: GameObject named '{roomHandlerObjectName}' not found.");
+            }
+        }
 
         _floorLayerId = LayerMask.NameToLayer(floorLayerName);
         if (_floorLayerId == -1)

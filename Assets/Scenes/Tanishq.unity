@@ -370,8 +370,8 @@ MonoBehaviour:
   sandwichZoneMask:
     serializedVersion: 2
     m_Bits: 8
-  pointAction: {fileID: -3922999936517091712, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  clickAction: {fileID: 6998655932734621078, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  pointAction: {fileID: -7631158488547917825, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  clickAction: {fileID: -2939658221069793652, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   moveRigidbodyIfPresent: 1
   makeKinematicWhenPlaced: 1
   disableCollidersWhenPlaced: 1
@@ -1314,8 +1314,8 @@ MonoBehaviour:
   sandwichZoneMask:
     serializedVersion: 2
     m_Bits: 8
-  pointAction: {fileID: -3922999936517091712, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  clickAction: {fileID: 6998655932734621078, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  pointAction: {fileID: -7631158488547917825, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  clickAction: {fileID: -2939658221069793652, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   moveRigidbodyIfPresent: 1
   makeKinematicWhenPlaced: 1
   disableCollidersWhenPlaced: 1

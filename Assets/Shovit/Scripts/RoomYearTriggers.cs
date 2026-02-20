@@ -7,24 +7,28 @@ public class RoomYearTriggers : MonoBehaviour
     [Serializable]
     public class TriggerElement
     {
-        [Min(0)]
-        public int yearsToPass = 10;
-
-        [Tooltip("If true, fires once total (lifetime). If false, can fire again every frame after threshold.")]
+        [Min(0)] public int yearsToPass = 10;
         public bool triggerOnce = true;
-
-        [Tooltip("Called when TotalYearsPassed >= YearsToPass")]
         public UnityEvent onTriggered;
 
         [NonSerialized] public bool fired;
     }
 
-    [Header("References")]
+    [Header("References (auto from RoomHandler)")]
+    [SerializeField] private string roomHandlerName = "RoomHandler";
     [SerializeField] private RoomManager roomManager;
     [SerializeField] private RoomYearDirector yearDirector;
 
-    [Header("Triggers (add as many elements as you want)")]
+    [Header("Spoil Thresholds (years)")]
+    public int rawToAgedYears = 10;
+    public int agedToSpoiledYears = 10;
+
+    [Header("Triggers (add as many as you want)")]
     public TriggerElement[] triggers;
+
+    [Header("Debug")]
+    [SerializeField] private bool debugLogs = true;
+    [SerializeField] private bool debugRoomHandlerComponents = false;
 
     [Header("Read-only Debug")]
     [SerializeField] private int currentRoomIndex = -1;
@@ -33,7 +37,6 @@ public class RoomYearTriggers : MonoBehaviour
     [Tooltip("Sum of years experienced across all rooms (does NOT reset on room change).")]
     [SerializeField] private int totalYearsPassed = 0;
 
-    private int _lastRoomIndex = int.MinValue;
     private int _lastObservedYearInThatRoom = 0;
 
     public int CurrentRoomIndex => currentRoomIndex;
@@ -42,13 +45,18 @@ public class RoomYearTriggers : MonoBehaviour
 
     private void Awake()
     {
-        if (roomManager == null) roomManager = FindFirstObjectByType<RoomManager>();
-        if (yearDirector == null) yearDirector = FindFirstObjectByType<RoomYearDirector>();
+        EnsureRefs();
+    }
+
+    private void OnEnable()
+    {
+        EnsureRefs();
+        RefreshRoom(force: true);
     }
 
     private void Start()
     {
-        // Initialize
+        EnsureRefs();
         RefreshRoom(force: true);
         RefreshAndAccumulateYears();
         EvaluateTriggers();
@@ -56,9 +64,52 @@ public class RoomYearTriggers : MonoBehaviour
 
     private void Update()
     {
+        if (!EnsureRefs())
+            return;
+
         RefreshRoom(force: false);
         RefreshAndAccumulateYears();
         EvaluateTriggers();
+    }
+
+    private bool EnsureRefs()
+    {
+        if (roomManager != null && yearDirector != null)
+            return true;
+
+        GameObject roomHandler = GameObject.Find(roomHandlerName);
+        if (roomHandler == null)
+        {
+            if (debugLogs)
+                Debug.LogWarning($"[RoomYearTriggers] '{name}' -> GameObject '{roomHandlerName}' not found.");
+            return false;
+        }
+
+        if (debugRoomHandlerComponents)
+        {
+            var comps = roomHandler.GetComponents<Component>();
+            for (int i = 0; i < comps.Length; i++)
+            {
+                if (comps[i] == null) continue;
+                Debug.Log($"[RoomYearTriggers] RoomHandler component: {comps[i].GetType().FullName}");
+            }
+        }
+
+        if (roomManager == null)
+            roomManager = roomHandler.GetComponent<RoomManager>();
+
+        if (yearDirector == null)
+            yearDirector = roomHandler.GetComponent<RoomYearDirector>();
+
+        if (debugLogs)
+        {
+            Debug.Log($"[RoomYearTriggers] EnsureRefs '{name}' -> " +
+                      $"roomManager={(roomManager ? "FOUND" : "NULL")} " +
+                      $"yearDirector={(yearDirector ? "FOUND" : "NULL")} " +
+                      $"(RoomHandler='{roomHandler.name}')");
+        }
+
+        return roomManager != null && yearDirector != null;
     }
 
     private void RefreshRoom(bool force)
@@ -66,22 +117,24 @@ public class RoomYearTriggers : MonoBehaviour
         if (roomManager == null || yearDirector == null)
             return;
 
+        // Try object position first
         int newRoom = roomManager.GetRoomIndex(transform.position);
+
+        // If object isn't inside any room (common when held), fall back to player's room
+        if (newRoom < 0)
+            newRoom = yearDirector.CurrentPlayerRoomIndex;
 
         if (force || newRoom != currentRoomIndex)
         {
             currentRoomIndex = newRoom;
-            _lastRoomIndex = newRoom;
 
             if (currentRoomIndex >= 0)
-            {
-                // When entering a room, start tracking from the room's current year
                 _lastObservedYearInThatRoom = yearDirector.GetRoomYearInt(currentRoomIndex);
-            }
             else
-            {
                 _lastObservedYearInThatRoom = 0;
-            }
+
+            if (debugLogs)
+                Debug.Log($"[RoomYearTriggers] '{name}' roomIndex={currentRoomIndex} baselineYear={_lastObservedYearInThatRoom}");
         }
     }
 
@@ -95,10 +148,14 @@ public class RoomYearTriggers : MonoBehaviour
 
         currentRoomYear = yearDirector.GetRoomYearInt(currentRoomIndex);
 
-        // Add only positive forward progress since last frame in THIS room
         int delta = currentRoomYear - _lastObservedYearInThatRoom;
         if (delta > 0)
+        {
             totalYearsPassed += delta;
+
+            if (debugLogs)
+                Debug.Log($"[RoomYearTriggers] '{name}' +{delta} years (Total={totalYearsPassed}) roomIndex={currentRoomIndex} yearNow={currentRoomYear}");
+        }
 
         _lastObservedYearInThatRoom = currentRoomYear;
     }
