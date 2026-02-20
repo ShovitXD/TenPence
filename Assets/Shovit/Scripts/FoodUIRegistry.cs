@@ -48,4 +48,17 @@ public class FoodUIRegistry : MonoBehaviour
         if (debugLogs) Debug.Log($"[FoodUIRegistry] Row created for id={uniqueId} name='{foodName}'");
         return row;
     }
+
+    public void UnregisterRow(int uniqueId)
+    {
+        if (!rowsById.TryGetValue(uniqueId, out var row))
+            return;
+
+        if (row != null)
+            Destroy(row.gameObject);
+
+        rowsById.Remove(uniqueId);
+
+        if (debugLogs) Debug.Log($"[FoodUIRegistry] Row removed for id={uniqueId}");
+    }
 }

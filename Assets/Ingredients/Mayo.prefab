@@ -12,9 +12,10 @@ GameObject:
   - component: {fileID: 5381151697619140157}
   - component: {fileID: 3208419360441482047}
   - component: {fileID: 5791053030296159281}
+  - component: {fileID: -2157506405408080635}
   m_Layer: 8
   m_Name: Mayo
-  m_TagString: Untagged
+  m_TagString: Pick
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -95,6 +96,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1be6f6813d335c84db407f2ee7c012d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParentHighlightController
+--- !u!114 &-2157506405408080635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4969664321573732274}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8b0c60327dbd1a468dcffac9ddad669, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DragItem
 --- !u!1 &7679922011137359576
 GameObject:
   m_ObjectHideFlags: 0

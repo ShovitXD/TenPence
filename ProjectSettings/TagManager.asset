@@ -35,6 +35,9 @@ TagManager:
   - spoiledW
   - SCrystal
   - FCrystal
+  - Pick
+  - SandwichStack
+  - Table
   layers:
   - Default
   - TransparentFX

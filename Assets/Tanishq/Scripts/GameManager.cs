@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -35,21 +36,29 @@ public class GameManager : MonoBehaviour
 
     [Header("Orders")]
     [SerializeField] private List<OrderDefinition> availableOrders = new();
-    [SerializeField] private bool pickRandomOrderOnStart = true;
     [SerializeField] private IngredientMatchMode matchMode = IngredientMatchMode.IgnoreOrder;
-    [SerializeField] private bool perfectRequiresNoExtras = false;
+    [SerializeField] private bool perfectRequiresNoExtras = true;
+
+    [Header("Order Timing")]
+    [SerializeField] private bool autoGenerateOrders = true;
+    [SerializeField] private float minOrderIntervalSeconds = 30f;
+    [SerializeField] private float maxOrderIntervalSeconds = 60f;
+    [SerializeField] private bool generateFirstOrderImmediately = true;
+
+    [Header("Wiring")]
+    [SerializeField] private SandwichOrder sandwichOrder;          // assign your SandwichOrder in inspector
+    [SerializeField] private SandwichStackZone sandwichStackZone;  // optional: assign to clear stack on new order
+    [SerializeField] private bool resetStackOnNewOrder = true;
 
     [Header("Star Rating")]
-    [SerializeField] private int maxStars = 3;
-    [SerializeField] private float oneStarAt = 0.34f;
-    [SerializeField] private float twoStarsAt = 0.67f;
-    [SerializeField] private float threeStarsAt = 1.0f;
+    [SerializeField] private int maxStars = 5;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
     private OrderDefinition currentOrder;
     private int currentOrderIndex = -1;
+    private Coroutine orderLoopRoutine;
 
     public event Action<OrderDefinition> OnNewOrder;
     public event Action<SandwichScore> OnSandwichSubmitted;
@@ -58,11 +67,7 @@ public class GameManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            if (debugLogs)
-            {
-                Debug.LogWarning("[GameManager] Duplicate instance detected. Destroying: " + name);
-            }
-
+            if (debugLogs) Debug.LogWarning("[GameManager] Duplicate instance detected. Destroying: " + name);
             Destroy(gameObject);
             return;
         }
@@ -73,47 +78,64 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("[GameManager] Awake() Instance set: " + name);
             Debug.Log("[GameManager] availableOrders count: " + (availableOrders != null ? availableOrders.Count : 0));
-            Debug.Log("[GameManager] matchMode: " + matchMode + " perfectRequiresNoExtras: " + perfectRequiresNoExtras);
-            Debug.Log("[GameManager] star thresholds: 1*=" + oneStarAt + " 2*=" + twoStarsAt + " 3*=" + threeStarsAt + " maxStars: " + maxStars);
         }
     }
 
     private void Start()
     {
-        if (debugLogs)
+        if (autoGenerateOrders)
         {
-            Debug.Log("[GameManager] Start() pickRandomOrderOnStart: " + pickRandomOrderOnStart);
+            orderLoopRoutine = StartCoroutine(OrderLoop());
         }
-
-        if (pickRandomOrderOnStart)
+        else if (generateFirstOrderImmediately)
         {
             StartNewOrder();
         }
     }
 
-    public OrderDefinition GetCurrentOrder()
+    private void OnDisable()
     {
-        return currentOrder;
+        if (orderLoopRoutine != null)
+        {
+            StopCoroutine(orderLoopRoutine);
+            orderLoopRoutine = null;
+        }
     }
+
+    private IEnumerator OrderLoop()
+    {
+        if (generateFirstOrderImmediately)
+            StartNewOrder();
+
+        while (true)
+        {
+            float wait = UnityEngine.Random.Range(
+                Mathf.Min(minOrderIntervalSeconds, maxOrderIntervalSeconds),
+                Mathf.Max(minOrderIntervalSeconds, maxOrderIntervalSeconds)
+            );
+
+            if (debugLogs) Debug.Log($"[GameManager] Next order in {wait:0.0}s");
+
+            yield return new WaitForSeconds(wait);
+
+            StartNewOrder();
+        }
+    }
+
+    public OrderDefinition GetCurrentOrder() => currentOrder;
 
     public void StartNewOrder(int index = -1)
     {
         if (availableOrders == null || availableOrders.Count == 0)
         {
-            if (debugLogs)
-            {
-                Debug.LogWarning("[GameManager] StartNewOrder() aborted. No availableOrders configured in Inspector.");
-            }
-
+            if (debugLogs) Debug.LogWarning("[GameManager] StartNewOrder() aborted. No availableOrders configured.");
             currentOrder = null;
             currentOrderIndex = -1;
             return;
         }
 
         if (index < 0)
-        {
             index = UnityEngine.Random.Range(0, availableOrders.Count);
-        }
 
         index = Mathf.Clamp(index, 0, availableOrders.Count - 1);
         currentOrderIndex = index;
@@ -126,25 +148,35 @@ public class GameManager : MonoBehaviour
             Debug.Log("[GameManager] Required Ingredients: " + (currentOrder != null ? string.Join(", ", currentOrder.ingredientIds) : "NULL"));
         }
 
+        // Push into SandwichOrder so SandwichStackZone uses the new required count
+        if (sandwichOrder != null && currentOrder != null)
+        {
+            sandwichOrder.SetRequiredIngredients(currentOrder.ingredientIds);
+        }
+
+        // Optional: clear current sandwich when new order arrives (prevents “Franken-sandwich” scoring)
+        if (resetStackOnNewOrder && sandwichStackZone != null)
+        {
+            sandwichStackZone.ResetStack();
+        }
+
         OnNewOrder?.Invoke(currentOrder);
     }
 
-    public SandwichScore EvaluateSandwich(GameObject sandwichRoot)
+    // Optional scoring pipeline if you want DeliveryBag to go through GameManager later:
+    public SandwichScore SubmitSandwich(SandwichStackZone stackZone)
     {
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] EvaluateSandwich() sandwichRoot: " + (sandwichRoot != null ? sandwichRoot.name : "NULL"));
-        }
+        SandwichScore score = EvaluateSandwich(stackZone);
+        OnSandwichSubmitted?.Invoke(score);
+        return score;
+    }
 
+    private SandwichScore EvaluateSandwich(SandwichStackZone stackZone)
+    {
         SandwichScore score = new();
 
         if (currentOrder == null)
         {
-            if (debugLogs)
-            {
-                Debug.LogWarning("[GameManager] EvaluateSandwich() aborted. currentOrder is NULL.");
-            }
-
             score.orderName = "NO_ORDER";
             return score;
         }
@@ -153,224 +185,55 @@ public class GameManager : MonoBehaviour
         score.required = new List<string>(currentOrder.ingredientIds);
         score.requiredCount = score.required.Count;
 
-        if (sandwichRoot == null)
-        {
-            if (debugLogs)
-            {
-                Debug.LogWarning("[GameManager] EvaluateSandwich() sandwichRoot is NULL. Returning 0 score.");
-            }
-
-            score.deliveredCount = 0;
-            score.correctCount = 0;
-            score.wrongCount = 0;
-            score.missingCount = score.requiredCount;
-            score.stars = 0;
-            return score;
-        }
-
-        Ingredient[] deliveredIngredients = sandwichRoot.GetComponentsInChildren<Ingredient>(true);
-
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] EvaluateSandwich() Found delivered Ingredients: " + (deliveredIngredients != null ? deliveredIngredients.Length : 0));
-        }
-
-        for (int i = 0; i < deliveredIngredients.Length; i++)
-        {
-            Ingredient ing = deliveredIngredients[i];
-
-            if (ing == null)
-            {
-                continue;
-            }
-
-            score.delivered.Add(ing.GetId());
-        }
-
+        score.delivered = stackZone != null ? stackZone.GetPlacedIngredientIds() : new List<string>();
         score.deliveredCount = score.delivered.Count;
 
-        if (matchMode == IngredientMatchMode.ExactOrder)
+        // IgnoreOrder multiset matching (simple + fair)
+        Dictionary<string, int> requiredCounts = new(StringComparer.OrdinalIgnoreCase);
+        foreach (var id in score.required)
         {
-            if (debugLogs)
-            {
-                Debug.Log("[GameManager] EvaluateSandwich() Using ExactOrder matching.");
-            }
-
-            int min = Mathf.Min(score.required.Count, score.delivered.Count);
-            int correct = 0;
-
-            for (int i = 0; i < min; i++)
-            {
-                if (string.Equals(score.required[i], score.delivered[i], StringComparison.OrdinalIgnoreCase))
-                {
-                    correct++;
-                }
-            }
-
-            score.correctCount = correct;
-            score.wrongCount = score.deliveredCount - correct;
-            score.missingCount = score.requiredCount - correct;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+            if (!requiredCounts.ContainsKey(id)) requiredCounts[id] = 0;
+            requiredCounts[id]++;
         }
-        else
+
+        int correct = 0, wrong = 0;
+        foreach (var got in score.delivered)
         {
-            if (debugLogs)
+            if (string.IsNullOrWhiteSpace(got)) { wrong++; continue; }
+
+            if (requiredCounts.TryGetValue(got, out int count) && count > 0)
             {
-                Debug.Log("[GameManager] EvaluateSandwich() Using IgnoreOrder matching (multiset). ");
+                correct++;
+                requiredCounts[got] = count - 1;
             }
-
-            Dictionary<string, int> requiredCounts = new(StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < score.required.Count; i++)
+            else
             {
-                string id = score.required[i];
-
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    continue;
-                }
-
-                if (requiredCounts.ContainsKey(id))
-                {
-                    requiredCounts[id]++;
-                }
-                else
-                {
-                    requiredCounts[id] = 1;
-                }
+                wrong++;
             }
-
-            int correct = 0;
-            int wrong = 0;
-
-            for (int i = 0; i < score.delivered.Count; i++)
-            {
-                string got = score.delivered[i];
-
-                if (string.IsNullOrWhiteSpace(got))
-                {
-                    wrong++;
-                    continue;
-                }
-
-                if (requiredCounts.TryGetValue(got, out int count) && count > 0)
-                {
-                    correct++;
-                    requiredCounts[got] = count - 1;
-                }
-                else
-                {
-                    wrong++;
-                }
-            }
-
-            int missing = 0;
-
-            foreach (var kvp in requiredCounts)
-            {
-                missing += kvp.Value;
-            }
-
-            score.correctCount = correct;
-            score.wrongCount = wrong;
-            score.missingCount = missing;
         }
+
+        int missing = 0;
+        foreach (var kv in requiredCounts) missing += kv.Value;
+
+        score.correctCount = correct;
+        score.wrongCount = wrong;
+        score.missingCount = missing;
 
         score.stars = CalculateStars(score);
-
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] EvaluateSandwich() RESULT");
-            Debug.Log("[GameManager] Order: " + score.orderName);
-            Debug.Log("[GameManager] Required(" + score.requiredCount + "): " + string.Join(", ", score.required));
-            Debug.Log("[GameManager] Delivered(" + score.deliveredCount + "): " + string.Join(", ", score.delivered));
-            Debug.Log("[GameManager] Correct: " + score.correctCount + " Wrong: " + score.wrongCount + " Missing: " + score.missingCount + " Stars: " + score.stars + "/" + maxStars);
-        }
-
-        return score;
-    }
-
-    public SandwichScore EvaluateSandwich(SandwichStack stack)
-    {
-        return EvaluateSandwich(stack != null ? stack.gameObject : null);
-    }
-
-    public SandwichScore SubmitSandwich(SandwichStack stack)
-    {
-        return SubmitSandwich(stack != null ? stack.gameObject : null);
-    }
-
-    public SandwichScore SubmitSandwich(GameObject sandwichRoot)
-    {
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] SubmitSandwich() called.");
-        }
-
-        SandwichScore score = EvaluateSandwich(sandwichRoot);
-
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] SubmitSandwich() DONE. Stars: " + score.stars);
-        }
-
-        OnSandwichSubmitted?.Invoke(score);
         return score;
     }
 
     private int CalculateStars(SandwichScore score)
     {
-        if (score == null)
-        {
-            return 0;
-        }
-
-        if (score.requiredCount <= 0)
-        {
-            return 0;
-        }
+        if (score == null || score.requiredCount <= 0) return 0;
 
         float ratio = score.correctCount / (float)score.requiredCount;
+        int stars = Mathf.Clamp(Mathf.RoundToInt(ratio * maxStars), 0, maxStars);
 
-        if (debugLogs)
-        {
-            Debug.Log("[GameManager] CalculateStars() ratio: " + ratio);
-        }
+        if (perfectRequiresNoExtras && score.wrongCount > 0 && stars == maxStars)
+            stars = maxStars - 1;
 
-        if (perfectRequiresNoExtras)
-        {
-            if (ratio >= threeStarsAt && score.wrongCount == 0)
-            {
-                return Mathf.Clamp(3, 0, maxStars);
-            }
-
-            if (ratio >= twoStarsAt)
-            {
-                return Mathf.Clamp(2, 0, maxStars);
-            }
-
-            if (ratio >= oneStarAt)
-            {
-                return Mathf.Clamp(1, 0, maxStars);
-            }
-
-            return 0;
-        }
-
-        if (ratio >= threeStarsAt)
-        {
-            return Mathf.Clamp(3, 0, maxStars);
-        }
-
-        if (ratio >= twoStarsAt)
-        {
-            return Mathf.Clamp(2, 0, maxStars);
-        }
-
-        if (ratio >= oneStarAt)
-        {
-            return Mathf.Clamp(1, 0, maxStars);
-        }
-
-        return 0;
+        return stars;
     }
 }

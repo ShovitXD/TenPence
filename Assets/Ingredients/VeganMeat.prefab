@@ -123,9 +123,10 @@ GameObject:
   - component: {fileID: 303436874597980370}
   - component: {fileID: 9039117969111630517}
   - component: {fileID: 8734515500838009096}
+  - component: {fileID: -2791373878532489518}
   m_Layer: 8
   m_Name: VeganMeat
-  m_TagString: Untagged
+  m_TagString: Pick
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -329,6 +330,18 @@ MonoBehaviour:
   foodName: Food
   icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
   debugLogs: 0
+--- !u!114 &-2791373878532489518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3732140580763476470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8b0c60327dbd1a468dcffac9ddad669, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DragItem
 --- !u!1 &7713347604935680954
 GameObject:
   m_ObjectHideFlags: 0
