@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3039681019281047189}
   - component: {fileID: 3711243392736350723}
   - component: {fileID: 3567786539780069511}
+  - component: {fileID: 4508624916669087610}
   m_Layer: 0
   m_Name: RadioS
   m_TagString: Untagged
@@ -133,11 +134,11 @@ AudioSource:
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
+  DopplerLevel: 5
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 5
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -146,22 +147,31 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
+      value: 0.99041367
+      inSlope: -3.0011995
+      outSlope: -3.0011995
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.55274457
+      value: 0.20523071
+      inSlope: -0.7502999
+      outSlope: -0.7502999
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: -0.33346638
+      outSlope: -0.33346638
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -170,7 +180,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -210,6 +220,26 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &4508624916669087610
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 773439187494162424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fddce9b4cc6d3d448a3c5384842111e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioPlaylist
+  playlist:
+  - {fileID: 8300000, guid: 0c76e0d8f66d84d4f99425189bff4074, type: 3}
+  - {fileID: 8300000, guid: 898a3197329e0ce4fbc92f47421f0b08, type: 3}
+  - {fileID: 8300000, guid: 25dfc25f8c5e0b54f95f07b7e46fcc71, type: 3}
+  - {fileID: 8300000, guid: 076e3e20bdcd9254e87c915d3496566f, type: 3}
+  loopPlaylist: 1
+  shuffle: 1
+  playOnStart: 1
 --- !u!1 &1805130824133068436
 GameObject:
   m_ObjectHideFlags: 0
@@ -257,13 +287,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3c8e77fad2b5824e8c72726a3134a61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomAudioSwitcher
-  roomManager: {fileID: 3284770238397939835, guid: 9c1337b5caf9e234d8e5d1315d801e65, type: 3}
-  player: {fileID: 3075009470137020740, guid: ec4d48b8bbf6bed4d85984e25f466159, type: 3}
+  roomManager: {fileID: 0}
+  player: {fileID: 0}
   roomAudio:
   - {fileID: 3567786539780069511}
   - {fileID: 5442703724650296936}
   - {fileID: 4641949355798765014}
-  debugLogs: 0
+  debugLogs: 1
 --- !u!1 &2323822612763548027
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,6 +307,7 @@ GameObject:
   - component: {fileID: 2620036484318991964}
   - component: {fileID: 7719610115962944740}
   - component: {fileID: 5442703724650296936}
+  - component: {fileID: 5551374137549198206}
   m_Layer: 0
   m_Name: RadioN
   m_TagString: Untagged
@@ -392,16 +423,16 @@ AudioSource:
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
+  DopplerLevel: 5
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 5
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -410,22 +441,31 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
+      value: 0.99041367
+      inSlope: -3.0011995
+      outSlope: -3.0011995
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.55274457
+      value: 0.20523071
+      inSlope: -0.7502999
+      outSlope: -0.7502999
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: -0.33346638
+      outSlope: -0.33346638
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -434,7 +474,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -474,6 +514,26 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &5551374137549198206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2323822612763548027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fddce9b4cc6d3d448a3c5384842111e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioPlaylist
+  playlist:
+  - {fileID: 8300000, guid: adf087f4063d3ca4da989fcb1e7f4cef, type: 3}
+  - {fileID: 8300000, guid: 090f5a4977a5fe448a49e0a1df943291, type: 3}
+  - {fileID: 8300000, guid: e2b4b3287ab494d4dafe96175d41f10a, type: 3}
+  - {fileID: 8300000, guid: 6096a66b28c2b70479bd65ce3053d150, type: 3}
+  loopPlaylist: 1
+  shuffle: 1
+  playOnStart: 1
 --- !u!1 &5645212174582452627
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,6 +547,7 @@ GameObject:
   - component: {fileID: 5216320865493450453}
   - component: {fileID: 2619247323240643812}
   - component: {fileID: 4641949355798765014}
+  - component: {fileID: 5302755804505875680}
   m_Layer: 0
   m_Name: RadioF
   m_TagString: Untagged
@@ -607,11 +668,11 @@ AudioSource:
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
+  DopplerLevel: 5
   MinDistance: 1
-  MaxDistance: 500
+  MaxDistance: 5
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -620,22 +681,31 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
+      value: 0.99041367
+      inSlope: -3.0011995
+      outSlope: -3.0011995
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.55274457
+      value: 0.20523071
+      inSlope: -0.7502999
+      outSlope: -0.7502999
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
     - serializedVersion: 3
       time: 1
       value: 0
-      inSlope: 0
-      outSlope: 0
+      inSlope: -0.33346638
+      outSlope: -0.33346638
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
+      inWeight: 0
+      outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
@@ -644,7 +714,7 @@ AudioSource:
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 0
+      value: 1
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -684,3 +754,23 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &5302755804505875680
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5645212174582452627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fddce9b4cc6d3d448a3c5384842111e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioPlaylist
+  playlist:
+  - {fileID: 8300000, guid: 8ba4b81e0026ab1439587fabe5704c24, type: 3}
+  - {fileID: 8300000, guid: 6a1ccaaa25ed993479c2bb8500bc66ad, type: 3}
+  - {fileID: 8300000, guid: 33d877ff26489c54285d1ce89a5caab9, type: 3}
+  - {fileID: 8300000, guid: 7e123a71f68e7734a88126d303cf396b, type: 3}
+  loopPlaylist: 1
+  shuffle: 1
+  playOnStart: 1
