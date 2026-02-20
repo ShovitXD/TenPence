@@ -65,6 +65,35 @@ public class FoodUIItem : MonoBehaviour
             Debug.Log($"[FoodUIItem] Registered row for '{foodName}' id={uniqueId}");
     }
 
+    private void OnDestroy()
+    {
+        CleanupUIRow();
+    }
+
+    private void OnDisable()
+    {
+        // Optional safety cleanup for cases where object is disabled before destroy.
+        // If you only want removal on actual destroy, you can delete this method.
+        CleanupUIRow();
+    }
+
+    private void CleanupUIRow()
+    {
+        if (!registered) return;
+
+        if (FoodUIRegistry.Instance != null)
+        {
+            // Make sure your FoodUIRegistry has this method.
+            FoodUIRegistry.Instance.UnregisterRow(uniqueId);
+
+            if (debugLogs)
+                Debug.Log($"[FoodUIItem] Unregistered row for '{foodName}' id={uniqueId}");
+        }
+
+        row = null;
+        registered = false;
+    }
+
     private bool IsHeldNow()
     {
         if (HandL == null || HandR == null) return false;

@@ -6,10 +6,15 @@ public class RoomTeleporterIA : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private RoomRelativeTeleporter teleporter;
+    [SerializeField] private PlayerMoveLook playerMoveLook; // script to enable/disable
 
     [Header("Settings UI")]
     [Tooltip("Panel GameObject to toggle on Settings input.")]
     [SerializeField] private GameObject settingsPanel;
+
+    [Header("Cursor")]
+    [SerializeField] private bool lockCursorWhenPanelClosed = true;
+    [SerializeField] private bool unlockCursorWhenPanelOpen = true;
 
     [Header("Action Map / Action Names")]
     [Tooltip("This script switches PlayerInput to this map on enable. Make sure Settings is in THIS map.")]
@@ -32,6 +37,9 @@ public class RoomTeleporterIA : MonoBehaviour
 
         if (teleporter == null)
             teleporter = GetComponent<RoomRelativeTeleporter>();
+
+        if (playerMoveLook == null)
+            playerMoveLook = GetComponent<PlayerMoveLook>();
     }
 
     private void OnEnable()
@@ -108,7 +116,41 @@ public class RoomTeleporterIA : MonoBehaviour
             return;
         }
 
-        settingsPanel.SetActive(!settingsPanel.activeSelf);
+        bool newState = !settingsPanel.activeSelf;
+        settingsPanel.SetActive(newState);
+
+        ApplySettingsState(newState);
+    }
+
+    private void ApplySettingsState(bool panelOpen)
+    {
+        // Toggle movement/look script
+        if (playerMoveLook != null)
+        {
+            playerMoveLook.enabled = !panelOpen;
+        }
+        else
+        {
+            Debug.LogWarning("RoomTeleporterIA: PlayerMoveLook not assigned/found.");
+        }
+
+        // Toggle cursor
+        if (panelOpen)
+        {
+            if (unlockCursorWhenPanelOpen)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
+        else
+        {
+            if (lockCursorWhenPanelClosed)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
     }
 
     private void Teleport(int roomIndex)

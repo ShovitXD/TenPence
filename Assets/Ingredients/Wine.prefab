@@ -337,9 +337,10 @@ GameObject:
   - component: {fileID: 1664484194139229798}
   - component: {fileID: 2476580031354414797}
   - component: {fileID: 3144924436499953465}
+  - component: {fileID: 1256051687387207587}
   m_Layer: 8
   m_Name: Wine
-  m_TagString: Untagged
+  m_TagString: Pick
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -543,3 +544,15 @@ MonoBehaviour:
   foodName: Food
   icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
   debugLogs: 0
+--- !u!114 &1256051687387207587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6120291337770953875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8b0c60327dbd1a468dcffac9ddad669, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DragItem

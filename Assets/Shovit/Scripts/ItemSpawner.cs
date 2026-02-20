@@ -9,6 +9,9 @@ public class ItemSpawner : MonoBehaviour
     [SerializeField] private string handLName = "HandL";
     [SerializeField] private string handRName = "HandR";
 
+    [Header("Drag Lock Until Equipped")]
+    [SerializeField] private bool disableDragUntilPickedUp = true;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
@@ -41,12 +44,18 @@ public class ItemSpawner : MonoBehaviour
             return;
         }
 
-        if (_currentItem.IsChildOf(HandL) || _currentItem.IsChildOf(HandR))
+        bool inLeftHand = _currentItem.IsChildOf(HandL);
+        bool inRightHand = _currentItem.IsChildOf(HandR);
+
+        // When the player equips/picks the item, enable DragItem on THIS item, then spawn the next one.
+        if (inLeftHand || inRightHand)
         {
+            EnableDragIfPresent(_currentItem.gameObject);
+
             if (debugLogs)
             {
-                string which = _currentItem.IsChildOf(HandL) ? HandL.name : HandR.name;
-                Debug.Log($"[ItemSpawner] Detected pickup: '{_currentItem.name}' is now child of '{which}'. Spawning new.");
+                string which = inLeftHand ? HandL.name : HandR.name;
+                Debug.Log($"[ItemSpawner] Detected pickup: '{_currentItem.name}' is now child of '{which}'. Enabling DragItem + spawning new.");
             }
 
             SpawnNew();
@@ -64,8 +73,35 @@ public class ItemSpawner : MonoBehaviour
         GameObject go = Instantiate(itemPrefab, transform.position, transform.rotation);
         _currentItem = go.transform;
 
+        if (disableDragUntilPickedUp)
+            DisableDragIfPresent(go);
+
         if (debugLogs)
             Debug.Log($"[ItemSpawner] Spawned '{go.name}' at '{name}' pos={transform.position} rot={transform.rotation.eulerAngles}");
+    }
+
+    private void DisableDragIfPresent(GameObject go)
+    {
+        if (go == null) return;
+
+        DragItem drag = go.GetComponent<DragItem>();
+        if (drag != null)
+        {
+            drag.enabled = false;
+            if (debugLogs) Debug.Log($"[ItemSpawner] DragItem DISABLED on '{go.name}' until equipped.");
+        }
+    }
+
+    private void EnableDragIfPresent(GameObject go)
+    {
+        if (go == null) return;
+
+        DragItem drag = go.GetComponent<DragItem>();
+        if (drag != null && !drag.enabled)
+        {
+            drag.enabled = true;
+            if (debugLogs) Debug.Log($"[ItemSpawner] DragItem ENABLED on '{go.name}' (equipped by player).");
+        }
     }
 
     private void TryAutoFindHandsFromActivePlayer()
@@ -78,7 +114,6 @@ public class ItemSpawner : MonoBehaviour
         {
             if (all[i] == null) continue;
 
-            // only use active in hierarchy
             if (all[i].gameObject.activeInHierarchy)
             {
                 activePickup = all[i];
@@ -88,7 +123,7 @@ public class ItemSpawner : MonoBehaviour
 
         if (activePickup == null)
         {
-            if (debugLogs) Debug.LogWarning("[ItemSpawner] No ACTIVE PlayerPickupHands found (both players inactive?).");
+            if (debugLogs) Debug.LogWarning("[ItemSpawner] No ACTIVE PlayerPickupHands found.");
             return;
         }
 
@@ -117,7 +152,6 @@ public class ItemSpawner : MonoBehaviour
     {
         if (root == null || string.IsNullOrEmpty(nameToFind)) return null;
 
-        // includes inactive children
         Transform[] all = root.GetComponentsInChildren<Transform>(true);
         for (int i = 0; i < all.Length; i++)
         {

@@ -346,11 +346,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomTeleportInputActions
   teleporter: {fileID: 2173782897362028284}
+  playerMoveLook: {fileID: 8044592470975625270}
+  settingsPanel: {fileID: 0}
+  lockCursorWhenPanelClosed: 1
+  unlockCursorWhenPanelOpen: 1
   actionMapName: Player
   teleport0ActionName: TeleportRoom0
   teleport1ActionName: TeleportRoom1
   teleport2ActionName: TeleportRoom2
+  settingsActionName: Settings
   logRoomIndexOnPress: 0
+  logActionLookup: 0
 --- !u!114 &-5281826967776698028
 MonoBehaviour:
   m_ObjectHideFlags: 0
