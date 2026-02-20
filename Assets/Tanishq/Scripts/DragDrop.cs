@@ -1,316 +1,160 @@
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class DragDrop : MonoBehaviour
 {
-    [Header("Required Refferences")]
-    [SerializeField] private Camera mainCamera;
+    [Header("Setup")]
+    [SerializeField] private Camera cam;
     [SerializeField] private LayerMask draggableMask = ~0;
-    [SerializeField] private LayerMask sandwichZoneMask = 0;
+    [SerializeField] private float maxPickDistance = 500f;
 
-    [Header("Input Actions")]
-    [SerializeField] private InputActionReference pointAction;
-    [SerializeField] private InputActionReference clickAction;
+    [Header("Movement")]
+    [SerializeField] private float followSpeed = 30f;
+    [SerializeField] private float castRadiusPadding = 0.02f;
 
-    [Header("Rigidbody handling")]
-    [SerializeField] private bool moveRigidbodyIfPresent = true;
+    private Rigidbody grabbedRb;
+    private Collider grabbedCol;
 
-    [Header("On Place In Sandwich Zone")]
-    [SerializeField] private bool makeKinematicWhenPlaced = true;
-    [SerializeField] private bool disableCollidersWhenPlaced = true;
-
-    [Header("Debug")]
-    [SerializeField] private bool debugLogs = true;
-
-    private Transform dragged;
-    private Rigidbody draggedRigidbody;
-    private Ingredient draggedIngredient;
-
-    private Plane dragPlane;
+    private float grabDistance;
     private Vector3 grabOffset;
+
+    private bool prevKinematic;
+    private bool prevUseGravity;
+    private bool prevFreezeRotation;
+
+    private float castRadius;
 
     private void Awake()
     {
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] Awake()");
-        }
-
-        if (!mainCamera)
-        {
-            mainCamera = Camera.main;
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] mainCamera not assigned, using Camera.main");
-            }
-        }
-
-        if (!mainCamera)
-        {
-            Debug.LogError("[DragDrop] No Camera assigned and no MainCamera found. Dragging won't work.");
-        }
+        if (!cam) cam = Camera.main;
     }
 
     private void Update()
     {
-        if (!dragged || !mainCamera || pointAction == null)
-        {
-            return;
-        }
+        if (!cam) return;
 
-        Vector2 screenPosition = pointAction.action.ReadValue<Vector2>();
-        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
+        if (PointerPressedThisFrame())
+            TryGrab();
 
-        if (dragPlane.Raycast(ray, out float enter))
-        {
-            Vector3 planeHit = ray.GetPoint(enter);
-            Vector3 target = planeHit + grabOffset;
-
-            if (moveRigidbodyIfPresent && draggedRigidbody)
-            {
-                draggedRigidbody.MovePosition(target);
-            }
-            else
-            {
-                dragged.position = target;
-            }
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] Update() dragging: " + dragged.name + " target: " + target);
-            }
-        }
+        if (PointerReleasedThisFrame())
+            DropAndRelease();
     }
 
-    private void OnEnable()
+    private void FixedUpdate()
     {
-        if (debugLogs)
+        if (!grabbedRb) return;
+
+        Ray ray = cam.ScreenPointToRay(GetPointerScreenPosition());
+        Vector3 desired = ray.GetPoint(grabDistance) + grabOffset;
+
+        Vector3 current = grabbedRb.position;
+        Vector3 step = Vector3.Lerp(current, desired, 1f - Mathf.Exp(-followSpeed * Time.fixedDeltaTime));
+        Vector3 moveDelta = step - current;
+
+        float dist = moveDelta.magnitude;
+        if (dist > 0.0001f)
         {
-            Debug.Log("[DragDrop] OnEnable()");
+            Vector3 dir = moveDelta / dist;
+
+            // Collision-aware drag movement.
+            if (Physics.SphereCast(current, castRadius, dir, out RaycastHit hit, dist, ~0, QueryTriggerInteraction.Ignore))
+                step = hit.point - dir * castRadius;
         }
 
-        if (pointAction)
-        {
-            pointAction.action.Enable();
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] pointAction enabled: " + pointAction.action.name);
-            }
-        }
-
-        if (clickAction)
-        {
-            clickAction.action.Enable();
-            clickAction.action.started += OnPress;
-            clickAction.action.canceled += OnRelease;
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] clickAction enabled + callbacks bound: " + clickAction.action.name);
-            }
-        }
+        grabbedRb.MovePosition(step);
     }
 
-    private void OnDisable()
+    private void TryGrab()
     {
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnDisable()");
-        }
+        if (grabbedRb) return;
 
-        if (clickAction)
-        {
-            clickAction.action.started -= OnPress;
-            clickAction.action.canceled -= OnRelease;
-            clickAction.action.Disable();
-        }
+        Ray ray = cam.ScreenPointToRay(GetPointerScreenPosition());
 
-        if (pointAction)
-        {
-            pointAction.action.Disable();
-        }
+        if (!Physics.Raycast(ray, out RaycastHit hit, maxPickDistance, draggableMask, QueryTriggerInteraction.Ignore))
+            return;
+
+        Rigidbody rb = hit.rigidbody;
+        if (!rb) return;
+
+        // Tags gate what can be dragged.
+        bool isIngredient = rb.CompareTag("Ingredients");
+        bool isSandwichStack = rb.CompareTag("SandwichStack");
+        if (!isIngredient && !isSandwichStack) return;
+
+        DraggableState state = rb.GetComponentInParent<DraggableState>();
+        if (state != null && !state.CanDrag) return;
+
+        Collider col = rb.GetComponent<Collider>();
+        if (!col) return;
+
+        grabbedRb = rb;
+        grabbedCol = col;
+
+        grabDistance = hit.distance;
+        grabOffset = rb.position - hit.point;
+
+        castRadius = Mathf.Max(0.01f, grabbedCol.bounds.extents.magnitude * 0.25f) + castRadiusPadding;
+
+        prevKinematic = grabbedRb.isKinematic;
+        prevUseGravity = grabbedRb.useGravity;
+        prevFreezeRotation = grabbedRb.freezeRotation;
+
+        grabbedRb.isKinematic = false;
+        grabbedRb.useGravity = false;
+        grabbedRb.freezeRotation = true;
+        grabbedRb.linearVelocity = Vector3.zero;
+        grabbedRb.angularVelocity = Vector3.zero;
     }
 
-    private void OnPress(InputAction.CallbackContext ctx)
+    private void DropAndRelease()
     {
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnPress()");
-        }
+        if (!grabbedRb) return;
 
-        if (!mainCamera || pointAction == null)
+        bool dropHandled = false;
+
+        // Raycast on release to find a drop target. Triggers are allowed for drop targets.
+        Ray ray = cam.ScreenPointToRay(GetPointerScreenPosition());
+        if (Physics.Raycast(ray, out RaycastHit hit, maxPickDistance, ~0, QueryTriggerInteraction.Collide))
         {
-            if (debugLogs)
+            IDropTarget target = hit.collider.GetComponentInParent<IDropTarget>();
+            if (target != null && target.CanAccept(grabbedRb.gameObject))
             {
-                Debug.LogWarning("[DragDrop] OnPress() aborted. Missing mainCamera or pointAction.");
-            }
-
-            return;
-        }
-
-        Vector2 screenPosition = pointAction.action.ReadValue<Vector2>();
-        Ray ray = mainCamera.ScreenPointToRay(screenPosition);
-
-        if (!Physics.Raycast(ray, out RaycastHit hit, 1000f, draggableMask, QueryTriggerInteraction.Ignore))
-        {
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnPress() Raycast FAILED. Nothing draggable hit.");
-            }
-
-            return;
-        }
-
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnPress() HIT: " + hit.transform.name);
-        }
-
-        draggedIngredient = hit.transform.GetComponentInParent<Ingredient>();
-
-        if (draggedIngredient != null)
-        {
-            dragged = draggedIngredient.transform;
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnPress() Ingredient found: " + draggedIngredient.name);
-            }
-        }
-        else
-        {
-            dragged = hit.transform;
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnPress() Ingredient NOT found. Dragging hit transform.");
+                target.Accept(grabbedRb.gameObject);
+                dropHandled = true;
             }
         }
 
-        draggedRigidbody = dragged.GetComponent<Rigidbody>();
-        dragPlane = new Plane(mainCamera.transform.forward, hit.point);
-
-        if (dragPlane.Raycast(ray, out float enter))
+        // If a target handled the drop, it owns the rigidbody state now.
+        if (!dropHandled)
         {
-            Vector3 planeHit = ray.GetPoint(enter);
-            grabOffset = dragged.position - planeHit;
-
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnPress() grabOffset: " + grabOffset);
-            }
+            grabbedRb.freezeRotation = prevFreezeRotation;
+            grabbedRb.useGravity = prevUseGravity;
+            grabbedRb.isKinematic = prevKinematic;
         }
 
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnPress() DONE. Now dragging: " + dragged.name);
-        }
+        grabbedRb = null;
+        grabbedCol = null;
     }
 
-    private void OnRelease(InputAction.CallbackContext ctx)
+    private static Vector2 GetPointerScreenPosition()
     {
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnRelease()");
-        }
+        if (Mouse.current != null) return Mouse.current.position.ReadValue();
+        if (Touchscreen.current != null) return Touchscreen.current.primaryTouch.position.ReadValue();
+        return Vector2.zero;
+    }
 
-        bool placed = false;
+    private static bool PointerPressedThisFrame()
+    {
+        if (Mouse.current != null) return Mouse.current.leftButton.wasPressedThisFrame;
+        if (Touchscreen.current != null) return Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
+        return false;
+    }
 
-        if (dragged == null)
-        {
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnRelease() dragged is NULL.");
-            }
-
-            return;
-        }
-
-        if (draggedIngredient != null && sandwichZoneMask.value != 0 && mainCamera && pointAction != null)
-        {
-            Vector2 screenPosition = pointAction.action.ReadValue<Vector2>();
-            Ray ray = mainCamera.ScreenPointToRay(screenPosition);
-
-            if (Physics.Raycast(ray, out RaycastHit hit, 1000f, sandwichZoneMask, QueryTriggerInteraction.Collide))
-            {
-                if (debugLogs)
-                {
-                    Debug.Log("[DragDrop] OnRelease() SandwichZone HIT: " + hit.transform.name);
-                }
-
-                var stack = hit.transform.GetComponentInParent<SandwichStack>();
-
-                if (stack != null)
-                {
-                    if (debugLogs)
-                    {
-                        Debug.Log("[DragDrop] OnRelease() SandwichStack found: " + stack.name + " -> AddIngredient(" + draggedIngredient.name + ")");
-                    }
-
-                    stack.AddIngredient(draggedIngredient);
-                    placed = true;
-
-                    if (makeKinematicWhenPlaced && draggedRigidbody)
-                    {
-                        draggedRigidbody.isKinematic = true;
-                        draggedRigidbody.linearVelocity = Vector3.zero;
-                        draggedRigidbody.angularVelocity = Vector3.zero;
-
-                        if (debugLogs)
-                        {
-                            Debug.Log("[DragDrop] OnRelease() Rigidbody set to kinematic (PLACED).");
-                        }
-                    }
-
-                    if (disableCollidersWhenPlaced)
-                    {
-                        var cols = dragged.GetComponentsInChildren<Collider>();
-
-                        for (int i = 0; i < cols.Length; i++)
-                        {
-                            cols[i].enabled = false;
-                        }
-
-                        if (debugLogs)
-                        {
-                            Debug.Log("[DragDrop] OnRelease() Colliders disabled (PLACED). Count: " + cols.Length);
-                        }
-                    }
-                }
-                else
-                {
-                    if (debugLogs)
-                    {
-                        Debug.Log("[DragDrop] OnRelease() HIT SandwichZone but no SandwichStack found.");
-                    }
-                }
-            }
-            else
-            {
-                if (debugLogs)
-                {
-                    Debug.Log("[DragDrop] OnRelease() Not over sandwich zone.");
-                }
-            }
-        }
-        else
-        {
-            if (debugLogs)
-            {
-                Debug.Log("[DragDrop] OnRelease() Not an Ingredient or sandwichZoneMask is 0 or missing refs.");
-            }
-        }
-
-        if (debugLogs)
-        {
-            Debug.Log("[DragDrop] OnRelease() placed: " + placed);
-            Debug.Log("[DragDrop] OnRelease() Clearing drag refs.");
-        }
-
-        dragged = null;
-        draggedRigidbody = null;
-        draggedIngredient = null;
+    private static bool PointerReleasedThisFrame()
+    {
+        if (Mouse.current != null) return Mouse.current.leftButton.wasReleasedThisFrame;
+        if (Touchscreen.current != null) return Touchscreen.current.primaryTouch.press.wasReleasedThisFrame;
+        return false;
     }
 }
